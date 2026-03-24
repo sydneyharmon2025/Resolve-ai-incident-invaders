@@ -160,7 +160,6 @@ const soundIcon = document.getElementById('soundIcon');
 
 function updateSoundIcon() {
   if (soundEnabled) {
-    // Speaker with sound waves
     soundIcon.innerHTML = `<svg viewBox="0 0 14 14" fill="none">
       <rect x="1" y="5" width="2" height="4" fill="currentColor"/>
       <rect x="3" y="4" width="1" height="6" fill="currentColor"/>
@@ -173,7 +172,6 @@ function updateSoundIcon() {
       <rect x="12" y="4" width="1" height="6" fill="currentColor"/>
     </svg>`;
   } else {
-    // Speaker with X (muted)
     soundIcon.innerHTML = `<svg viewBox="0 0 14 14" fill="none">
       <rect x="1" y="5" width="2" height="4" fill="currentColor"/>
       <rect x="3" y="4" width="1" height="6" fill="currentColor"/>
@@ -194,7 +192,7 @@ function updateSoundIcon() {
 updateSoundIcon();
 
 soundBtn.addEventListener('click', () => {
-  getAudio(); // Unlock audio on click
+  getAudio();
   soundEnabled = !soundEnabled;
   updateSoundIcon();
 });
@@ -207,7 +205,6 @@ const pauseIcon = document.getElementById('pauseIcon');
 
 function updatePauseIcon() {
   if (paused) {
-    // Play icon (triangle)
     pauseIcon.innerHTML = `<svg viewBox="0 0 14 14" fill="none">
       <rect x="4" y="2" width="2" height="10" fill="currentColor"/>
       <rect x="6" y="3" width="2" height="8" fill="currentColor"/>
@@ -215,7 +212,6 @@ function updatePauseIcon() {
       <rect x="10" y="5" width="2" height="4" fill="currentColor"/>
     </svg>`;
   } else {
-    // Pause icon (two bars)
     pauseIcon.innerHTML = `<svg viewBox="0 0 14 14" fill="none">
       <rect x="3" y="2" width="3" height="10" fill="currentColor"/>
       <rect x="8" y="2" width="3" height="10" fill="currentColor"/>
@@ -267,9 +263,7 @@ function hideTutorial() {
   if (tutorialOverlay.style.display === 'none') return;
   tutorialOverlay.style.display = 'none';
   tutorialShown = true;
-  // Unlock audio on mobile
   getAudio();
-  // Go straight into the game after tutorial
   state='playing';levelKills=0;reset(true);lastTime=performance.now();loop(lastTime);
 }
 
@@ -308,7 +302,6 @@ function getAudio(){
   if(audioCtx.state==='suspended'){
     audioCtx.resume().then(()=>{
       audioUnlocked=true;
-      // Play a silent buffer to fully unlock on iOS
       const silentBuffer = audioCtx.createBuffer(1, 1, 22050);
       const source = audioCtx.createBufferSource();
       source.buffer = silentBuffer;
@@ -320,7 +313,6 @@ function getAudio(){
   }
   return audioCtx;
 }
-// Unlock audio on first touch/click anywhere
 document.addEventListener('touchstart', function unlockAudio(){
   getAudio();
   document.removeEventListener('touchstart', unlockAudio);
@@ -404,8 +396,6 @@ function updateShake() {
   }
 }
 
-
-
 // ── Bunker System ─────────────────────────────────────────────────────────────
 const BUNKER_COLS = 8;
 const BUNKER_ROWS = 4;
@@ -416,7 +406,6 @@ function createBunker(x, y, w, h) {
   const cells = [];
   for (let r = 0; r < BUNKER_ROWS; r++) {
     for (let c = 0; c < BUNKER_COLS; c++) {
-      // Create arch shape - skip top corners
       const isTopCorner = r === 0 && (c === 0 || c === BUNKER_COLS - 1);
       const isBottomCenter = r >= BUNKER_ROWS - 2 && c >= 3 && c <= 4;
       if (!isTopCorner && !isBottomCenter) {
@@ -425,7 +414,7 @@ function createBunker(x, y, w, h) {
           y: y + r * cellH,
           w: cellW,
           h: cellH,
-          hp: 3 // Each cell has 3 HP
+          hp: 3
         });
       }
     }
@@ -437,7 +426,6 @@ function initBunkers() {
   bunkers = [];
   const W = gW(), H = gH();
   const ps = Math.max(1, Math.floor(W / 240));
-  // Make bunkers larger on mobile to properly protect the player
   const mobileScale = isMobile ? 2.2 : 1;
   const bW = ps * 14 * mobileScale, bH = ps * 10 * mobileScale;
   const bY = H - sprH(SHIP) - 28 - (isMobile ? 10 : 0);
@@ -479,14 +467,11 @@ function checkBunkerCollision(x, y) {
 function drawBunkers() {
   for (const bunker of bunkers) {
     for (const cell of bunker.cells) {
-      // Color based on HP
       const alpha = cell.hp / 3;
       const r = Math.floor(26 * alpha);
       const g = Math.floor(64 * alpha);
       ctx.fillStyle = `rgb(${r},${g},0)`;
       ctx.fillRect(Math.floor(cell.x), Math.floor(cell.y), Math.ceil(cell.w), Math.ceil(cell.h));
-      
-      // Add damage cracks
       if (cell.hp < 3) {
         ctx.fillStyle = '#000';
         const cx = cell.x + cell.w / 2, cy = cell.y + cell.h / 2;
@@ -538,13 +523,14 @@ async function addToLB(name,sc,inc){
   try{await fetch(`${SB_URL}/rest/v1/leaderboard`,{method:'POST',headers:{...SB_H,'Prefer':'return=minimal'},body:JSON.stringify({name:name.toUpperCase().padEnd(3,'·').slice(0,3),score:sc,incidents:inc})});const lb=await loadLB();const entry=lb.find(e=>e.name===name.toUpperCase().padEnd(3,'·').slice(0,3)&&e.score===sc);return{lb,entry};}
   catch{return{lb:[],entry:null};}
 }
+
+// ✅ FIXED: submittedAt now converted to String
 async function saveEmail(name,sc,email){
-  // HubSpot Form Submission
   const portalId = '46939668';
   const formGuid = 'a387a832-a142-403a-a103-feede6ed1025';
   
   const payload = {
-    submittedAt: Date.now(),
+    submittedAt: String(Date.now()),  // ✅ FIX: Convert to string
     fields: [
       { 
         name: 'email', 
@@ -584,7 +570,6 @@ async function saveEmail(name,sc,email){
       return true;
     } else {
       console.log('=== FAILED ===');
-      // Try to parse error
       try {
         const errorData = JSON.parse(resultText);
         console.log('Error details:', errorData);
@@ -743,7 +728,7 @@ function spawnLevel(){
 function reset(full=true){
   bullets=[];eBullets=[];powerups=[];particles=[];bombWave=null;persistMsg='';levelClearDelay=0;paused=false;
   updatePauseIcon();
-  shake = { x: 0, y: 0, intensity: 0, decay: 0.92 }; // Reset shake
+  shake = { x: 0, y: 0, intensity: 0, decay: 0.92 };
   if(full){score=0;lives=3;level=1;noiseKills=0;pagerKills=0;incidentKills=0;totalKills=0;powerActive=null;powerStored=null;powerTimer=0;updPwrBtn();}
   player.x=gW()/2;player.y=gH()-30;player.inv=0;player.shootCD=0;levelKills=0;
   spawnLevel();
@@ -767,7 +752,6 @@ function update(dt){
   tickMarch(dt,enemies.filter(e=>e.alive).length);
   guaranteePowerup(levelKills);
 
-  // Bullets
   bullets=bullets.filter(b=>b.y>-20&&b.x>-20&&b.x<W+20);
   eBullets=eBullets.filter(b=>b.y<H+6);
   bullets.forEach(b=>{
@@ -788,15 +772,13 @@ function update(dt){
   });
   eBullets.forEach(b=>{b.y+=b.dy*dt;b.x+=(b.dx||0)*dt;});
 
-  // Enemy bullets vs bunkers (blocked)
   eBullets.forEach(b=>{
     if(checkBunkerCollision(b.x, b.y)){
       damageBunkerAt(b.x, b.y, true);
-      b.y = gH() + 999; // Remove bullet
+      b.y = gH() + 999;
     }
   });
 
-  // Enemies
   let wall=false;
   enemies.forEach(e=>{
     if(!e.alive)return;
@@ -810,7 +792,6 @@ function update(dt){
   powerups=powerups.filter(p=>p.y<H+20);powerups.forEach(p=>p.y+=p.dy*dt);
   particles=particles.filter(p=>p.life>0);particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=80*dt;p.life-=dt;});
 
-  // Bomb wave
   if(bombWave&&!bombWave.done){
     if(bombWave.phase==='fly'){
       bombWave.y-=bombWave.speed*dt;
@@ -820,7 +801,7 @@ function update(dt){
       if(bombWave.y<=bombWave.targetY){
         bombWave.phase='explode';bombWave.explodeX=bombWave.x;bombWave.explodeY=bombWave.targetY;bombWave.trail=[];
         SFX.bombExplode();
-        addShake(15); // Big shake for bomb
+        addShake(15);
       }
     } else {
       bombWave.frameTimer+=dt;
@@ -830,7 +811,6 @@ function update(dt){
     }
   }
 
-  // Bullet vs enemy
   bullets.forEach(b=>{
     enemies.forEach(e=>{
       if(!e.alive)return;
@@ -845,37 +825,33 @@ function update(dt){
     });
   });
 
-  // Enemy bullet vs player
   if(player.inv<=0){
     eBullets.forEach(b=>{
       if(Math.abs(b.x-player.x)<12&&Math.abs(b.y-player.y)<10){
         b.y=H+99;lives=clamp(lives-1,0,3);player.inv=2;SFX.playerHit();addParticles(player.x,player.y,LIME,10);
-        addShake(4); // Shake on player hit
+        addShake(4);
         setFlash(LOSE_Q[Math.floor(Math.random()*LOSE_Q.length)]);
         if(lives<=0&&state==='playing'){state='gameover';setTimeout(showLBOverlay,600);}
       }
     });
   }
 
-  // Enemy reaches player
   const prodHitY=player.y-sprH(SHIP)-4;
   enemies.forEach(e=>{
     if(e.alive&&e.y>prodHitY){
       e.alive=false;lives=clamp(lives-1,0,3);SFX.playerHit();addParticles(e.x,prodHitY,RED,12);
-      addShake(4); // Shake on prod hit
+      addShake(4);
       setFlash('PROD HIT!');
       if(lives<=0&&state==='playing'){state='gameover';setTimeout(showLBOverlay,600);}
     }
   });
 
-  // Powerup pickup
   powerups.forEach(p=>{
     if(Math.abs(p.x-player.x)<20&&Math.abs(p.y-player.y)<16){
       p.y=H+99;powerStored=p.type;updPwrBtn();SFX.powerUp();setFlash('POWER-UP!');addParticles(p.x,p.y,LIME,12);
     }
   });
 
-  // Level clear — wait for bomb animation to fully complete before triggering
   if(enemies.length>0&&enemies.every(e=>!e.alive)&&(!bombWave||bombWave.done)){
     if(levelClearDelay===0) levelClearDelay=persistMsg?0.6:0.01;
     levelClearDelay-=dt;
@@ -944,7 +920,6 @@ function drawPauseOverlay(){
 function drawGame(){
   const W=gW(),H=gH(),ps=Math.max(1,Math.floor(W/240));
   
-  // Apply screen shake
   updateShake();
   ctx.save();
   ctx.translate(shake.x, shake.y);
@@ -953,7 +928,6 @@ function drawGame(){
   drawStars();
   ctx.fillStyle='#1a1a1a';ctx.fillRect(0,H-sprH(SHIP)-8,W,1);
   
-  // Draw functional bunkers
   drawBunkers();
   
   enemies.forEach(e=>{
@@ -1002,11 +976,10 @@ function drawGame(){
   });
   particles.forEach(p=>{const ps2=Math.max(1,Math.floor(gW()/240));ctx.globalAlpha=clamp(p.life/.5,0,1);ctx.fillStyle=p.col;ctx.fillRect(Math.floor(p.x),Math.floor(p.y),ps2*2,ps2*2);});
   ctx.globalAlpha=1;
-  // Bomb animation
   if(bombWave&&!bombWave.done){
     if(bombWave.phase==='fly'){
       const tLen=bombWave.trail.length;
-      const trailPs = isMobile ? Math.max(2, ps) : ps; // Larger trail on mobile
+      const trailPs = isMobile ? Math.max(2, ps) : ps;
       bombWave.trail.forEach((t,i)=>{
         const ratio=i/Math.max(1,tLen-1),sz=Math.max(1,Math.floor(trailPs*(0.5+ratio*0.8)));
         let col=ratio<0.3?'#CC0000':ratio<0.55?'#FF3300':ratio<0.75?'#FF6600':ratio<0.9?'#FFA440':'#FFDD00';
@@ -1027,7 +1000,7 @@ function drawGame(){
     } else {
       const cx=bombWave.explodeX,cy=bombWave.explodeY,maxR=Math.max(W,H)*0.85,outerR=(bombWave.frame/bombWave.maxFrames)*maxR,seed=bombWave.frame*7919;
       const nz=(x,y)=>Math.abs(Math.sin(x*127.1+y*311.7+seed)*43758.5)%1;
-      const explosionPs = isMobile ? Math.max(3, ps * 2) : ps; // Larger pixels on mobile
+      const explosionPs = isMobile ? Math.max(3, ps * 2) : ps;
       for(let bx2=0;bx2<W;bx2+=explosionPs){for(let by2=0;by2<H;by2+=explosionPs){
         const dx=bx2+explosionPs/2-cx,dy=by2+explosionPs/2-cy,dist=Math.sqrt(dx*dx+dy*dy),noise=nz(bx2/explosionPs,by2/explosionPs)*outerR*0.22;
         if(dist-noise>outerR)continue;
@@ -1043,7 +1016,6 @@ function drawGame(){
     drawSprite(SHIP,Math.floor(player.x-sprW(SHIP)/2),Math.floor(player.y-sprH(SHIP)),LIME);
   drawHUD();
   drawScanlines();
-  // persistMsg
   if(persistMsg){
     ctx.save();
     ctx.globalAlpha=1;ctx.shadowBlur=0;
@@ -1058,10 +1030,8 @@ function drawGame(){
     ctx.restore();
   }
   
-  // Restore from shake transform
   ctx.restore();
   
-  // Draw pause overlay on top (not affected by shake)
   if(paused) drawPauseOverlay();
 }
 
