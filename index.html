@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>RESOLVE.AI — ON-CALL DEFENDER</title>
+<title>INCIDENT INVADERS</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -530,16 +530,15 @@ async function saveEmail(name,sc,email){
   const formGuid = 'a387a832-a142-403a-a103-feede6ed1025';
   
   const payload = {
-    submittedAt: String(Date.now()),  // ✅ FIX: Convert to string
+    submittedAt: String(Date.now()),
     fields: [
-      { 
-        name: 'email', 
-        value: email 
-      }
+      { name: 'firstname', value: name.charAt(0) || 'Player' },
+      { name: 'lastname', value: name.slice(1) || 'Unknown' },
+      { name: 'email', value: email }
     ],
     context: {
       pageUri: window.location.href || 'https://resolve.ai/game',
-      pageName: 'RESOLVE.AI Game'
+      pageName: 'Incident Invaders Game'
     }
   };
   
@@ -1069,8 +1068,8 @@ function drawMenu(){
   ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);drawStars();
   ctx.textAlign='center';ctx.textBaseline='top';
   let y=pad*2;drawLogo(W/2,y);y+=Math.max(10,Math.floor(W/32))+pad*2;
-  ctx.fillStyle=LIME;ctx.font=px(fBig);ctx.fillText('ON-CALL',W/2,y);y+=fBig+pad;
-  ctx.fillStyle=ORANGE;ctx.font=px(fBig);ctx.fillText('DEFENDER',W/2,y);y+=fBig+pad*3;
+  ctx.fillStyle=LIME;ctx.font=px(fBig);ctx.fillText('INCIDENT',W/2,y);y+=fBig+pad;
+  ctx.fillStyle=ORANGE;ctx.font=px(fBig);ctx.fillText('INVADERS',W/2,y);y+=fBig+pad*3;
   [BOT_NOISE,BOT_PAGER,BOT_P0,BOT_PAGER,BOT_NOISE].forEach((s,i)=>{
     const col=[LIME,ORANGE,RED,ORANGE,LIME][i];
     drawSprite(s,Math.floor(W/2+(i-2)*Math.floor(W/5.5)-sprW(s)/2),y,col);
