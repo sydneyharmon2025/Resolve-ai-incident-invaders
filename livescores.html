@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INCIDENT INVADERS — LIVE LEADERBOARD</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #000;
+    color: #fff;
+    font-family: 'Press Start 2P', monospace;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  /* ── Starfield ── */
+  #stars {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Scanlines ── */
+  #scanlines {
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.18) 2px,
+      rgba(0,0,0,0.18) 4px
+    );
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* ── Layout ── */
+  #page {
+    position: relative;
+    z-index: 5;
+    width: 100%;
+    max-width: 1400px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 32px 60px 32px;
+  }
+
+  /* ── Header ── */
+  #header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid #D9F400;
+    padding-bottom: 24px;
+    margin-bottom: 32px;
+  }
+
+  #logo-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #logo {
+    color: #D9F400;
+    font-size: 28px;
+    letter-spacing: 4px;
+  }
+
+  #subtitle {
+    display: none;
+  }
+
+  #title-block {
+    text-align: center;
+  }
+
+  #title-line1 {
+    color: #D9F400;
+    font-size: 42px;
+    letter-spacing: 6px;
+    line-height: 1.3;
+  }
+
+  #title-line2 {
+    color: #FFA440;
+    font-size: 42px;
+    letter-spacing: 6px;
+  }
+
+  #status-block {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+
+  #live-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #FF3333;
+    font-size: 11px;
+    letter-spacing: 2px;
+  }
+
+  #live-dot {
+    width: 10px;
+    height: 10px;
+    background: #FF3333;
+    border-radius: 50%;
+    animation: pulse-dot 1.2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.3; transform: scale(0.7); }
+  }
+
+  #last-updated {
+    color: #666;
+    font-size: 7px;
+    letter-spacing: 1px;
+  }
+
+  /* ── Table ── */
+  #lb-wrap {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #lb-header-row {
+    display: grid;
+    grid-template-columns: 80px 300px 1fr 300px;
+    gap: 0;
+    padding: 0 20px 14px;
+    border-bottom: 1px solid #2a2a2a;
+  }
+
+  #lb-header-row span {
+    color: #666;
+    font-size: 9px;
+    letter-spacing: 2px;
+  }
+
+  #lb-header-row span:nth-child(3),
+  #lb-header-row span:nth-child(4) {
+    text-align: right;
+  }
+
+  #lb-rows {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  .lb-row {
+    display: grid;
+    grid-template-columns: 80px 300px 1fr 300px;
+    gap: 0;
+    padding: 18px 20px;
+    border-bottom: 1px solid #1a1a1a;
+    align-items: center;
+    transition: background 0.4s ease;
+    position: relative;
+  }
+
+  .lb-row.new-entry {
+    animation: row-flash 1.5s ease-out;
+  }
+
+  @keyframes row-flash {
+    0% { background: rgba(217, 244, 0, 0.25); }
+    40% { background: rgba(217, 244, 0, 0.12); }
+    100% { background: transparent; }
+  }
+
+  .lb-row.rank-1 { background: rgba(217, 244, 0, 0.04); }
+  .lb-row.rank-2 { background: rgba(255, 164, 64, 0.02); }
+  .lb-row.rank-3 { background: rgba(255, 51, 51, 0.02); }
+
+  /* Rank */
+  .col-rank {
+    font-size: 22px;
+    font-weight: bold;
+  }
+
+  .rank-1 .col-rank { color: #D9F400; font-size: 28px; }
+  .rank-2 .col-rank { color: #FFA440; font-size: 24px; }
+  .rank-3 .col-rank { color: #FF3333; font-size: 22px; }
+  .rank-other .col-rank { color: #666; font-size: 18px; }
+
+  /* Name */
+  .col-name {
+    font-size: 26px;
+    letter-spacing: 6px;
+  }
+
+  .rank-1 .col-name { color: #D9F400; font-size: 34px; }
+  .rank-2 .col-name { color: #FFA440; font-size: 30px; }
+  .rank-3 .col-name { color: #FF3333; font-size: 27px; }
+  .rank-other .col-name { color: #888; font-size: 22px; }
+
+  /* Score */
+  .col-score {
+    font-size: 26px;
+    text-align: center;
+    letter-spacing: 3px;
+  }
+
+  .rank-1 .col-score { color: #D9F400; font-size: 32px; }
+  .rank-2 .col-score { color: #FFA440; font-size: 28px; }
+  .rank-3 .col-score { color: #FF3333; font-size: 26px; }
+  .rank-other .col-score { color: #888; font-size: 20px; }
+
+  /* Resolved */
+  .col-resolved {
+    font-size: 18px;
+    text-align: right;
+    letter-spacing: 2px;
+  }
+
+  .rank-1 .col-resolved { color: #D9F400; }
+  .rank-2 .col-resolved { color: #FFA440; }
+  .rank-3 .col-resolved { color: #FF3333; }
+  .rank-other .col-resolved { color: #666; font-size: 14px; }
+
+  /* ── Footer ── */
+  #footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 18px;
+    border-top: 1px solid #111;
+    margin-top: 8px;
+  }
+
+  #footer-left {
+    display: flex;
+    gap: 32px;
+  }
+
+  .footer-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .footer-stat-label {
+    color: #666;
+    font-size: 7px;
+    letter-spacing: 2px;
+  }
+
+  .footer-stat-value {
+    color: #D9F400;
+    font-size: 14px;
+    letter-spacing: 2px;
+  }
+
+  #footer-cta {
+    color: #444;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-align: right;
+  }
+
+  /* ── Empty state ── */
+  #empty-state {
+    display: none;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  #empty-state.visible { display: flex; }
+
+  #empty-text {
+    color: #222;
+    font-size: 14px;
+    letter-spacing: 3px;
+    animation: blink 1.4s infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  /* ── Ticker bar ── */
+  #ticker {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #0a0a0a;
+    border-top: 2px solid #111;
+    padding: 10px 0;
+    overflow: hidden;
+    z-index: 6;
+    height: 38px;
+  }
+
+  #ticker-inner {
+    display: flex;
+    gap: 80px;
+    white-space: nowrap;
+    animation: ticker-scroll 30s linear infinite;
+    width: max-content;
+  }
+
+  #ticker-inner span {
+    color: #1e1e1e;
+    font-size: 8px;
+    letter-spacing: 3px;
+  }
+
+  #ticker-inner span.highlight {
+    color: #2a2a00;
+  }
+
+  @keyframes ticker-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+<div id="scanlines"></div>
+
+<div id="page">
+  <div id="header">
+    <div id="logo-block">
+      <div id="logo">RESOLVE.AI</div>
+      <div id="subtitle">INCIDENT MANAGEMENT PLATFORM</div>
+    </div>
+
+    <div id="title-block">
+      <div id="title-line1">INCIDENT</div>
+      <div id="title-line2">INVADERS</div>
+    </div>
+
+    <div id="status-block">
+      <div id="live-badge">
+        <div id="live-dot"></div>
+        LIVE SCORES
+      </div>
+    </div>
+  </div>
+
+  <div id="lb-wrap">
+    <div id="lb-header-row">
+      <span>#</span>
+      <span>ENGINEER</span>
+      <span style="text-align:center">SCORE</span>
+      <span style="text-align:right">INCIDENTS RESOLVED</span>
+    </div>
+
+    <div id="lb-rows"></div>
+
+    <div id="empty-state">
+      <div id="empty-text">AWAITING FIRST SCORE...</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Supabase config (same as game) ────────────────────────────────────────────
+const SB_URL = 'https://tchvimviipazcbepljfi.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjaHZpbXZpaXBhemNiZXBsamZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NDg4MTEsImV4cCI6MjA4OTUyNDgxMX0.zMMIGb7uJ1cznQfm_t_Gi22yI8pLIIDcERa0n1zYI18';
+const SB_H = { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+
+// ── Starfield ─────────────────────────────────────────────────────────────────
+const starCanvas = document.getElementById('stars');
+const starCtx = starCanvas.getContext('2d');
+const STARS = [];
+
+function initStars() {
+  starCanvas.width = window.innerWidth;
+  starCanvas.height = window.innerHeight;
+  STARS.length = 0;
+  for (let i = 0; i < 120; i++) {
+    STARS.push({
+      x: Math.random() * starCanvas.width,
+      y: Math.random() * starCanvas.height,
+      r: Math.random() * 1.5,
+      speed: 0.1 + Math.random() * 0.3,
+      alpha: 0.1 + Math.random() * 0.4
+    });
+  }
+}
+
+function drawStars() {
+  starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+  STARS.forEach(s => {
+    s.y += s.speed;
+    if (s.y > starCanvas.height) { s.y = 0; s.x = Math.random() * starCanvas.width; }
+    starCtx.globalAlpha = s.alpha;
+    starCtx.fillStyle = '#fff';
+    starCtx.fillRect(s.x, s.y, s.r, s.r);
+  });
+  starCtx.globalAlpha = 1;
+  requestAnimationFrame(drawStars);
+}
+
+window.addEventListener('resize', initStars);
+initStars();
+drawStars();
+
+// ── Leaderboard state ─────────────────────────────────────────────────────────
+let prevScores = [];
+let initialLoad = true;
+
+function scoreKey(e) {
+  return e.name + '|' + e.score + '|' + e.created_at;
+}
+
+function formatTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function rankClass(i) {
+  if (i === 0) return 'rank-1';
+  if (i === 1) return 'rank-2';
+  if (i === 2) return 'rank-3';
+  return 'rank-other';
+}
+
+function rankLabel(i) {
+  return String(i + 1).padStart(2, '0');
+}
+
+function renderRows(entries) {
+  const container = document.getElementById('lb-rows');
+  const empty = document.getElementById('empty-state');
+
+  if (!entries || entries.length === 0) {
+    container.innerHTML = '';
+    empty.classList.add('visible');
+    return;
+  }
+
+  empty.classList.remove('visible');
+
+  const prevKeys = new Set(prevScores.map(scoreKey));
+
+  container.innerHTML = '';
+  entries.forEach((e, i) => {
+    const isNew = !initialLoad && !prevKeys.has(scoreKey(e));
+    const rc = rankClass(i);
+
+    const row = document.createElement('div');
+    row.className = `lb-row ${rc}${isNew ? ' new-entry' : ''}`;
+    row.innerHTML = `
+      <div class="col-rank">${rankLabel(i)}</div>
+      <div class="col-name">${e.name || '???'}</div>
+      <div class="col-score">${String(e.score || 0).padStart(6, '0')}</div>
+      <div class="col-resolved">${e.incidents || 0}</div>
+    `;
+    container.appendChild(row);
+  });
+
+  prevScores = entries;
+  initialLoad = false;
+}
+
+async function fetchAndRender() {
+  try {
+    const r = await fetch(
+      `${SB_URL}/rest/v1/leaderboard?select=name,score,incidents,created_at&order=score.desc&limit=50`,
+      { headers: SB_H }
+    );
+    const data = await r.json();
+    renderRows(Array.isArray(data) ? data : []);
+  } catch (err) {
+    console.error('Leaderboard fetch failed:', err);
+  }
+}
+
+// Initial load + poll every 7 seconds
+fetchAndRender();
+setInterval(fetchAndRender, 7000);
+autoScroll();
+</script>
+</body>
+</html>
